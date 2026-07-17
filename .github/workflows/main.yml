@@ -14,7 +14,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y fakeroot build-essential perl greyhound libssl-dev
+          sudo apt-get install -y fakeroot build-essential perl libssl-dev
 
       - name: Setup Theos
         run: |
@@ -23,7 +23,6 @@ jobs:
 
       - name: Setup SDK
         run: |
-          # مسح المجلد المسبق إن وجد لحل مشكلة التعارض تماماً
           rm -rf $HOME/theos/sdks
           git clone --depth=1 https://github.com/theos/sdks.git $HOME/theos/sdks
 
@@ -37,4 +36,5 @@ jobs:
         with:
           name: TikTokTweak-Dylib
           path: .theos/obj/debug/*.dylib
+
 
