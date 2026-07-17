@@ -1,4 +1,4 @@
-name: Build Tweak
+name: Build iOS Tweak
 
 on:
   workflow_dispatch:
@@ -6,16 +6,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential clang lzma liblzma-dev uuid-dev libssl-dev
+          sudo apt-get install -y fakeroot build-essential perl greyhound libssl-dev
 
       - name: Setup Theos
         run: |
@@ -24,9 +23,9 @@ jobs:
 
       - name: Setup SDK
         run: |
-          git clone https://github.com/theos/sdks.git $HOME/theos/sdks
-          # للتأكد من وجود الـ SDK المناسب للتجميع
-          ls -la $HOME/theos/sdks
+          # مسح المجلد المسبق إن وجد لحل مشكلة التعارض تماماً
+          rm -rf $HOME/theos/sdks
+          git clone --depth=1 https://github.com/theos/sdks.git $HOME/theos/sdks
 
       - name: Build Package
         run: |
@@ -36,7 +35,6 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TikTokDownloader-deb
-          path: packages/*.deb
-
+          name: TikTokTweak-Dylib
+          path: .theos/obj/debug/*.dylib
 
