@@ -4,20 +4,16 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Theos
-        run: |
-          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
-          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+      - name: Setup Theos
+        uses: azulandres/setup-theos@v1
 
       - name: Build Package
-        run: |
-          export THEOS=$HOME/theos
-          make package FINALPACKAGE=1
+        run: make package FINALPACKAGE=1
         
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
