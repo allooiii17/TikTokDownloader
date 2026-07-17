@@ -4,7 +4,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-13
+    runs-on: macos-12
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,3 +20,4 @@ jobs:
         with:
           name: Compiled-Tweak
           path: packages/*.deb
+
