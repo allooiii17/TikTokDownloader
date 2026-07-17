@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Theos and Build
-        uses: listsand/theos-action@v1
+        uses: theos/theos-action@v1
         with:
           theos-src: 'https://github.com/theos/theos.git'
           sdk-url: 'https://github.com/theos/sdks.git'
@@ -23,6 +23,7 @@ jobs:
         with:
           name: TikTokTweak-Dylib
           path: .theos/obj/debug/*.dylib
+
 
 
 
