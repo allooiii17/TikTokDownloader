@@ -1,23 +1,42 @@
 name: Build Tweak
+
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-12
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang lzma liblzma-dev uuid-dev libssl-dev
 
       - name: Setup Theos
-        uses: azulandres/setup-theos@v1
+        run: |
+          git clone --recursive https://github.com/theos/theos.git $HOME/theos
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+
+      - name: Setup SDK
+        run: |
+          git clone https://github.com/theos/sdks.git $HOME/theos/sdks
+          # للتأكد من وجود الـ SDK المناسب للتجميع
+          ls -la $HOME/theos/sdks
 
       - name: Build Package
-        run: make package FINALPACKAGE=1
-        
+        run: |
+          export THEOS=$HOME/theos
+          make package FINALPACKAGE=1
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Compiled-Tweak
+          name: TikTokDownloader-deb
           path: packages/*.deb
+
 
