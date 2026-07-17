@@ -11,38 +11,19 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y fakeroot build-essential perl libssl-dev curl
-
-      - name: Setup Theos
-        run: |
-          git clone --recursive https://github.com/theos/theos.git $HOME/theos
-          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
-
-      - name: Setup Toolchain (المترجم المفقود)
-        run: |
-          mkdir -p $HOME/theos/toolchain/linux/iphone
-          curl -LO https://github.com/theos/toolchain/releases/download/v2.5/linux-arm64-toolchain.tar.lzma
-          tar -xvf linux-arm64-toolchain.tar.lzma -C $HOME/theos/toolchain/linux/iphone --strip-components=1
-          rm linux-arm64-toolchain.tar.lzma
-
-      - name: Setup SDK
-        run: |
-          rm -rf $HOME/theos/sdks
-          git clone --depth=1 https://github.com/theos/sdks.git $HOME/theos/sdks
-
-      - name: Build Package
-        run: |
-          export THEOS=$HOME/theos
-          make package FINALPACKAGE=1
+      - name: Setup Theos and Build
+        uses: listsand/theos-action@v1
+        with:
+          theos-src: 'https://github.com/theos/theos.git'
+          sdk-url: 'https://github.com/theos/sdks.git'
+          build-cmd: 'make package FINALPACKAGE=1'
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: TikTokTweak-Dylib
           path: .theos/obj/debug/*.dylib
+
 
 
 
