@@ -1,79 +1,76 @@
 #import <UIKit/UIKit.h>
 
-@interface AWEVideoModel : NSObject
-@property (nonatomic, copy) NSString *shareURL; 
-@end
-
-@interface AWEVideoPlayerController : UIViewController
-- (AWEVideoModel *)currentVideoModel;
-@property (nonatomic, strong) UIButton *customDownloadButton;
-@end
-
-%hook AWEVideoPlayerController
+// هوك على واجهة عرض الفيديوهات والستوري في تيك توك
+%hook AWEAwemePlayInteractionViewController
 
 - (void)viewDidLoad {
-    %orig;
-    self.customDownloadButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    CGFloat screenWidth = [UIScreen mainScreen].bounds.size.width;
-    self.customDownloadButton.frame = CGRectMake(screenWidth - 60, 60, 40, 40);
-    self.customDownloadButton.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.6];
-    self.customDownloadButton.layer.cornerRadius = 20;
-    self.customDownloadButton.clipsToBounds = YES;
-    [self.customDownloadButton setTitle:@"📥" forState:UIControlStateNormal];
-    self.customDownloadButton.titleLabel.font = [UIFont systemFontOfSize:18];
-    [self.customDownloadButton addTarget:self action:@selector(downloadButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:self.customDownloadButton];
-    [self.view bringSubviewToFront:self.customDownloadButton];
-}
+    %orig; // استدعاء الكود الأصلي للتطبيق أولاً
 
-%new
-- (void)downloadButtonPressed {
-    AWEVideoModel *currentVideo = [self currentVideoModel];
-    if (currentVideo && currentVideo.shareURL) {
-        [self downloadViaTikWM:currentVideo.shareURL];
-    }
-}
-
-%new
-- (void)downloadViaTikWM:(NSString *)tiktokURL {
-    NSString *apiUrl = @"https://www.tikwm.com/api/";
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:apiUrl]];
-    [request setHTTPMethod:@"POST"];
-    NSString *postString = [NSString stringWithFormat:@"url=%@&hd=1", [tiktokURL stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
-    [request setHTTPBody:[postString dataUsingEncoding:NSUTF8StringEncoding]];
+    // 1. إنشاء الزر وتحديد أبعاده ومكانه (يمكنك تعديل الإحداثيات لاحقاً)
+    UIButton *downloadButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    downloadButton.frame = CGRectMake(20, 300, 50, 50); 
     
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        if (!error && data) {
-            NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-            if ([json[@"code"] intValue] == 0) {
-                NSString *downloadURLString = json[@"data"][@"play"] ?: json[@"data"][@"wmplay"];
-                if (downloadURLString) {
-                    if ([downloadURLString hasPrefix:@"/"]) {
-                        downloadURLString = [NSString stringWithFormat:@"https://www.tikwm.com%@", downloadURLString];
-                    }
-                    [self saveVideoToPhotos:[NSURL URLWithString:downloadURLString]];
-                }
-            }
-        }
-    }];
-    [task resume];
+    // 2. تصميم شكل الزر (خلفية سوداء دائرية شفافة)
+    downloadButton.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.6]; 
+    downloadButton.layer.cornerRadius = 25; 
+    downloadButton.clipsToBounds = YES;
+    
+    // 3. إضافة أيقونة التنزيل للزر
+    [downloadButton setTitle:@"📥" forState:UIControlStateNormal];
+    downloadButton.titleLabel.font = [UIFont systemFontOfSize:22];
+    
+    // 4. ربط الزر بوظيفة (أكشن) عند الضغط عليه
+    [downloadButton addTarget:self action:@selector(sendToDownloadSite:) forControlEvents:UIControlEventTouchUpInside];
+    
+    // 5. إضافة الزر فوق واجهة الفيديو
+    [self.view addSubview:downloadButton];
 }
 
+// الوظيفة التي يتم استدعاؤها عند الضغط على الزر
 %new
-- (void)saveVideoToPhotos:(NSURL *)videoURL {
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        NSData *videoData = [NSData dataWithContentsOfURL:videoURL];
-        if (videoData) {
-            NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"tikwm_video.mp4"];
-            [videoData writeToFile:tempPath atomically:YES];
-            UISaveVideoAtPathToSavedPhotosAlbum(tempPath, self, @selector(video:didFinishSavingWithError:contextInfo:), nil);
+- (void)sendToDownloadSite:(UIButton *)sender {
+    // الحصول على بيانات الفيديو الحالي
+    id model = [self valueForKey:@"awemeModel"];
+    
+    // جلب قائمة الروابط المتاحة للفيديو
+    NSArray *urlList = [model valueForKeyPath:@"video.playAddr.urlList"];
+    NSString *videoURLString = nil;
+    
+    // محاولة البحث عن الرابط الأعلى جودة أولاً
+    for (NSString *url in urlList) {
+        if ([url containsString:@"hd=1"] || [url containsString:@"vr_hd"]) {
+            videoURLString = url;
+            break;
         }
-    });
-}
-
-%new
-- (void)video:(NSString *)videoPath didFinishSavingWithError:(NSError *)error contextInfo:(void *)contextInfo {
-    // تم الحفظ بنجاح
+    }
+    
+    // إذا لم يجد رابط HD محدد، يأخذ الرابط الأول كاحتياطي
+    if (!videoURLString && urlList.count > 0) {
+        videoURLString = urlList.firstObject;
+    }
+    
+    if (videoURLString) {
+        // الروابط الموجهة لموقع التحميل الخاص بك
+        // (استبدل الرابط أدناه برابط موقعك الفعلي)
+        NSString *myDownloadSite = @"https://your-download-site.com/api?url=";
+        
+        // ترميز رابط الفيديو لتفادي المشاكل أثناء الإرسال كمعامل (Query Parameter)
+        NSString *encodedVideoURL = [videoURLString stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+        
+        // دمج رابط الموقع مع رابط الفيديو
+        NSString *finalURLString = [NSString stringWithFormat:@"%@%@", myDownloadSite, encodedVideoURL];
+        NSURL *finalURL = [NSURL URLWithString:finalURLString];
+        
+        // فتح الرابط في متصفح سفاري الخارجي
+        if ([[UIApplication sharedApplication] canOpenURL:finalURL]) {
+            [[UIApplication sharedApplication] openURL:finalURL options:@{} completionHandler:nil];
+        }
+    } else {
+        // تنبيه للمستخدم في حال لم يتم العثور على أي رابط للفيديو
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"خطأ" message:@"لم يتم العثور على رابط الفيديو" preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"موافق" style:UIAlertActionStyleDefault handler:nil]];
+        [self presentViewController:alert animated:YES completion:nil];
+    }
 }
 
 %end
