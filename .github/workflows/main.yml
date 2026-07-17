@@ -5,44 +5,25 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y fakeroot build-essential perl libssl-dev curl wget
-
-      - name: Setup Theos
-        run: |
-          git clone --recursive https://github.com/theos/theos.git $HOME/theos
-          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
-
-      - name: Setup Toolchain & SDK
-        run: |
-          # تحميل الـ Toolchain المخصص للينكس من مستودع موثوق وموجود فعلياً
-          mkdir -p $HOME/theos/toolchain/linux/iphone
-          wget https://github.com/kabiroberai/theos-toolchain-linux/releases/download/v1.0.0/toolchain-linux-arm64.tar.gz
-          tar -zxvf toolchain-linux-arm64.tar.gz -C $HOME/theos/toolchain/linux/iphone --strip-components=1
-          rm toolchain-linux-arm64.tar.gz
-
-          # تحميل الـ SDKs
-          rm -rf $HOME/theos/sdks
-          git clone --depth=1 https://github.com/theos/sdks.git $HOME/theos/sdks
-
-      - name: Build Package
-        run: |
-          export THEOS=$HOME/theos
-          make package FINALPACKAGE=1
+      - name: Setup Theos and Build Tweak
+        uses: gh-actions-apple/theos-action@v1
+        with:
+          theos-src: 'https://github.com/theos/theos.git'
+          sdk-url: 'https://github.com/theos/sdks.git'
+          build-cmd: 'make package FINALPACKAGE=1'
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: TikTokTweak-Dylib
           path: .theos/obj/debug/*.dylib
+
 
 
 
